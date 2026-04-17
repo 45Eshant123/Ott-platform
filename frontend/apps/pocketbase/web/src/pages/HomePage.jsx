@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import Header from '@/components/Header.jsx';
 import Footer from '@/components/Footer.jsx';
 import ContentCard from '@/components/ContentCard.jsx';
+import TopTenSection from '@/components/TopTenSection.jsx';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import pb from '@/lib/pocketbaseClient';
@@ -136,6 +137,8 @@ const HomePage = () => {
                         </div>
                     )}
                 </section>
+
+                <TopTenSection />
 
                 <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
                     <h2 className="font-display font-bold text-3xl md:text-4xl mb-8 text-foreground">
