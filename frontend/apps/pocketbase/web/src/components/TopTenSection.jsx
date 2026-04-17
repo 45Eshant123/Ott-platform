@@ -57,7 +57,7 @@ const TopTenSection = () => {
                 <div className="flex items-center gap-3 mb-8">
                     <Trophy className="w-8 h-8 text-primary" />
                     <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground">
-                        Top 10 this week
+                        Top 10 this day
                     </h2>
                 </div>
                 <div className="bg-card rounded-xl p-8 text-center">
@@ -72,7 +72,7 @@ const TopTenSection = () => {
             <div className="flex items-center gap-3 mb-8">
                 <Trophy className="w-8 h-8 text-primary" />
                 <h2 className="font-display font-bold text-3xl md:text-4xl text-foreground">
-                    Top 10 this week
+                    Top 10 this day
                 </h2>
             </div>
 
