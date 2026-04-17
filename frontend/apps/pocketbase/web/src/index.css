@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 240 10% 3.9%;
+        --foreground: 0 0% 95%;
+        --card: 240 6% 10%;
+        --card-foreground: 0 0% 95%;
+        --popover: 240 6% 10%;
+        --popover-foreground: 0 0% 95%;
+        --primary: 4 90% 58%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 240 4% 16%;
+        --secondary-foreground: 0 0% 95%;
+        --muted: 240 5% 12%;
+        --muted-foreground: 240 5% 64%;
+        --accent: 4 90% 58%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 240 4% 16%;
+        --input: 240 4% 16%;
+        --ring: 4 90% 58%;
+        --radius: 0.75rem;
+        --sidebar-background: 240 6% 10%;
+        --sidebar-foreground: 0 0% 95%;
+        --sidebar-primary: 4 90% 58%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 240 4% 16%;
+        --sidebar-accent-foreground: 0 0% 95%;
+        --sidebar-border: 240 4% 16%;
+        --sidebar-ring: 4 90% 58%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        font-family: "DM Sans", sans-serif;
+        overflow-x: clip;
+        font-feature-settings: "kern" 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: "Outfit", sans-serif;
+        overflow-wrap: anywhere;
+    }
+
+    p {
+        max-width: 65ch;
+    }
+}
+
+@layer utilities {
+    .text-balance {
+        overflow-wrap: anywhere;
+    }
+
+    .font-display {
+        font-family: "Outfit", sans-serif;
+    }
+}

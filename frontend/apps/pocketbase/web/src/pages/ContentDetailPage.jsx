@@ -1,0 +1,267 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
+import { Play, Plus, Check, Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Header from '@/components/Header.jsx';
+import Footer from '@/components/Footer.jsx';
+import ContentCard from '@/components/ContentCard.jsx';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext.jsx';
+import pb from '@/lib/pocketbaseClient';
+
+const ContentDetailPage = () => {
+    const { id } = useParams();
+    const { isAuthenticated, currentUser } = useAuth();
+    const [content, setContent] = useState(null);
+    const [relatedContent, setRelatedContent] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [inWatchlist, setInWatchlist] = useState(false);
+
+    useEffect(() => {
+        fetchContent();
+        fetchRelatedContent();
+        if (isAuthenticated) {
+            checkWatchlist();
+        }
+    }, [id, isAuthenticated]);
+
+    const fetchContent = async () => {
+        setLoading(true);
+        try {
+            const record = await pb.collection('content').getOne(id, { $autoCancel: false });
+            setContent(record);
+        } catch (error) {
+            console.error('Failed to fetch content:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchRelatedContent = async () => {
+        try {
+            const currentContent = await pb.collection('content').getOne(id, { $autoCancel: false });
+            const records = await pb.collection('content').getList(1, 8, {
+                filter: `type = "${currentContent.type}" && id != "${id}"`,
+                sort: '-rating',
+                $autoCancel: false
+            });
+            setRelatedContent(records.items);
+        } catch (error) {
+            console.error('Failed to fetch related content:', error);
+        }
+    };
+
+    const checkWatchlist = async () => {
+        try {
+            const records = await pb.collection('watchlist').getList(1, 1, {
+                filter: `userId = "${currentUser.id}" && contentId = "${id}"`,
+                $autoCancel: false
+            });
+            setInWatchlist(records.items.length > 0);
+        } catch (error) {
+            console.error('Failed to check watchlist:', error);
+        }
+    };
+
+    const toggleWatchlist = async () => {
+        if (!isAuthenticated) {
+            toast.error('Please sign in to add to watchlist');
+            return;
+        }
+
+        try {
+            if (inWatchlist) {
+                const records = await pb.collection('watchlist').getList(1, 1, {
+                    filter: `userId = "${currentUser.id}" && contentId = "${id}"`,
+                    $autoCancel: false
+                });
+                if (records.items.length > 0) {
+                    await pb.collection('watchlist').delete(records.items[0].id, { $autoCancel: false });
+                    setInWatchlist(false);
+                    toast('Removed from watchlist');
+                }
+            } else {
+                await pb.collection('watchlist').create({
+                    userId: currentUser.id,
+                    contentId: id
+                }, { $autoCancel: false });
+                setInWatchlist(true);
+                toast('Added to watchlist');
+            }
+        } catch (error) {
+            toast.error('Failed to update watchlist');
+        }
+    };
+
+    if (loading) {
+        return (
+            <>
+                <Header />
+                <div className="min-h-screen bg-background">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <Skeleton className="aspect-[2/3] rounded-2xl" />
+                            <div className="md:col-span-2 space-y-4">
+                                <Skeleton className="h-12 w-3/4" />
+                                <Skeleton className="h-6 w-1/2" />
+                                <Skeleton className="h-32 w-full" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <Footer />
+            </>
+        );
+    }
+
+    if (!content) {
+        return (
+            <>
+                <Header />
+                <div className="min-h-screen bg-background flex items-center justify-center">
+                    <p className="text-muted-foreground">Content not found</p>
+                </div>
+                <Footer />
+            </>
+        );
+    }
+
+    const thumbnailUrl = content.thumbnail
+        ? pb.files.getUrl(content, content.thumbnail)
+        : 'https://images.unsplash.com/photo-1574267432644-f610f5b45b2f?w=800';
+
+    return (
+        <>
+            <Helmet>
+                <title>{`${content.title} - StreamVault`}</title>
+                <meta name="description" content={content.description || `Watch ${content.title} on StreamVault`} />
+            </Helmet>
+
+            <div className="min-h-screen bg-background">
+                <Header />
+
+                <main>
+                    <div className="relative h-[60vh] overflow-hidden">
+                        <img
+                            src={thumbnailUrl}
+                            alt={content.title}
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+                    </div>
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-40 relative z-10">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div className="hidden md:block">
+                                <img
+                                    src={thumbnailUrl}
+                                    alt={content.title}
+                                    className="w-full rounded-2xl shadow-2xl"
+                                />
+                            </div>
+
+                            <div className="md:col-span-2 space-y-6">
+                                <h1 className="font-display font-bold text-4xl md:text-5xl lg:text-6xl text-foreground" style={{ letterSpacing: '-0.02em' }}>
+                                    {content.title}
+                                </h1>
+
+                                <div className="flex flex-wrap items-center gap-4">
+                                    {content.rating && (
+                                        <div className="flex items-center gap-1">
+                                            <Star className="w-5 h-5 text-yellow-500 fill-current" />
+                                            <span className="font-semibold text-foreground">{content.rating.toFixed(1)}</span>
+                                        </div>
+                                    )}
+                                    {content.releaseYear && (
+                                        <span className="text-muted-foreground">{content.releaseYear}</span>
+                                    )}
+                                    <span className="px-3 py-1 rounded-md bg-secondary text-secondary-foreground text-sm font-medium">
+                                        {content.type.charAt(0).toUpperCase() + content.type.slice(1)}
+                                    </span>
+                                    <span className="text-muted-foreground">{content.language}</span>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2">
+                                    {Array.isArray(content.genre) && content.genre.map((genre) => (
+                                        <span
+                                            key={genre}
+                                            className="px-3 py-1 rounded-md bg-muted text-muted-foreground text-sm"
+                                        >
+                                            {genre}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                <p className="text-foreground/80 text-lg leading-relaxed">
+                                    {content.description || 'No description available.'}
+                                </p>
+
+                                <div className="flex gap-4">
+                                    <Link to={`/watch/${content.id}`}>
+                                        <Button size="lg" className="gap-2">
+                                            <Play className="w-5 h-5 fill-current" />
+                                            Watch Now
+                                        </Button>
+                                    </Link>
+                                    <Button
+                                        size="lg"
+                                        variant="secondary"
+                                        onClick={toggleWatchlist}
+                                        className="gap-2"
+                                    >
+                                        {inWatchlist ? (
+                                            <>
+                                                <Check className="w-5 h-5" />
+                                                In Watchlist
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Plus className="w-5 h-5" />
+                                                Add to Watchlist
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+
+                                {content.trailerUrl && (
+                                    <div className="mt-8">
+                                        <h2 className="font-display font-semibold text-2xl mb-4 text-foreground">Trailer</h2>
+                                        <div className="aspect-video rounded-xl overflow-hidden bg-muted">
+                                            <video
+                                                src={content.trailerUrl}
+                                                controls
+                                                muted
+                                                autoPlay
+                                                loop
+                                                className="w-full h-full"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {relatedContent.length > 0 && (
+                            <div className="mt-20">
+                                <h2 className="font-display font-semibold text-2xl md:text-3xl mb-8 text-foreground">
+                                    More like this
+                                </h2>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                    {relatedContent.map((item, index) => (
+                                        <ContentCard key={item.id} content={item} index={index} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </main>
+
+                <Footer />
+            </div>
+        </>
+    );
+};
+
+export default ContentDetailPage;
