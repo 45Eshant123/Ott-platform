@@ -149,10 +149,10 @@ const HomePage = () => {
                         <Link to="/categories?type=movie">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
-                                className="relative h-64 rounded-2xl overflow-hidden group cursor-pointer"
+                                className="relative min-h-[250px] rounded-2xl overflow-hidden group cursor-pointer"
                             >
                                 <img
-                                    src="https://images.unsplash.com/photo-1574267432644-f610f5b45b2f?w=800"
+                                    src="https://picsum.photos/800/400"
                                     alt="Movies"
                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                 />
