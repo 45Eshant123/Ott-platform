@@ -16,10 +16,19 @@ const VideoPlayerPage = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!id || id === 'undefined') {
+            setLoading(false);
+            return;
+        }
         fetchContent();
     }, [id]);
 
     const fetchContent = async () => {
+        if (!id || id === 'undefined') {
+            setLoading(false);
+            return;
+        }
+
         try {
             const response = await apiServerClient.fetch(`/api/content/${id}`);
             if (!response.ok) {

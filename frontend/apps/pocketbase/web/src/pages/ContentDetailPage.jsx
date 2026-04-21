@@ -11,20 +11,53 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import apiServerClient from '@/lib/apiServerClient';
 
+const getYouTubeEmbedUrl = (url) => {
+    if (!url) return '';
+
+    try {
+        const parsed = new URL(url);
+        if (parsed.hostname.includes('youtube.com')) {
+            const videoId = parsed.searchParams.get('v');
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
+        }
+        if (parsed.hostname.includes('youtu.be')) {
+            const videoId = parsed.pathname.replace('/', '');
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
+        }
+        return '';
+    } catch {
+        return '';
+    }
+};
+
 const ContentDetailPage = () => {
     const { id } = useParams();
-    const { isAuthenticated, currentUser } = useAuth();
+    const { isAuthenticated } = useAuth();
     const [content, setContent] = useState(null);
     const [relatedContent, setRelatedContent] = useState([]);
     const [loading, setLoading] = useState(true);
     const [inWatchlist, setInWatchlist] = useState(false);
 
     useEffect(() => {
+        if (!id || id === 'undefined') {
+            setLoading(false);
+            return;
+        }
         fetchContent();
-        fetchRelatedContent();
     }, [id]);
 
+    useEffect(() => {
+        if (content?.type && id && id !== 'undefined') {
+            fetchRelatedContent(content.type);
+        }
+    }, [content?.type, id]);
+
     const fetchContent = async () => {
+        if (!id || id === 'undefined') {
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             const response = await apiServerClient.fetch(`/api/content/${id}`);
@@ -41,10 +74,10 @@ const ContentDetailPage = () => {
         }
     };
 
-    const fetchRelatedContent = async () => {
+    const fetchRelatedContent = async (contentType) => {
         try {
             const params = new URLSearchParams({
-                type: content?.type || 'movie',
+                type: contentType || 'movie',
                 limit: '8'
             });
 
@@ -109,6 +142,9 @@ const ContentDetailPage = () => {
     }
 
     const thumbnailUrl = content?.thumbnail || 'https://images.unsplash.com/photo-1574267432644-f610f5b45b2f?w=800';
+    const contentId = content.id || content._id;
+    const youtubeEmbedUrl = getYouTubeEmbedUrl(content.trailerUrl);
+    const trailerSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${content.title} ${content.releaseYear || ''} official trailer`)}`;
 
     return (
         <>
@@ -177,7 +213,7 @@ const ContentDetailPage = () => {
                                 </p>
 
                                 <div className="flex gap-4">
-                                    <Link to={`/watch/${content.id}`}>
+                                    <Link to={`/watch/${contentId}`}>
                                         <Button size="lg" className="gap-2">
                                             <Play className="w-5 h-5 fill-current" />
                                             Watch Now
@@ -203,21 +239,42 @@ const ContentDetailPage = () => {
                                     </Button>
                                 </div>
 
-                                {content.trailerUrl && (
-                                    <div className="mt-8">
-                                        <h2 className="font-display font-semibold text-2xl mb-4 text-foreground">Trailer</h2>
+                                <div className="mt-8">
+                                    <h2 className="font-display font-semibold text-2xl mb-4 text-foreground">Trailer</h2>
+
+                                    {content.trailerUrl ? (
                                         <div className="aspect-video rounded-xl overflow-hidden bg-muted">
-                                            <video
-                                                src={content.trailerUrl}
-                                                controls
-                                                muted
-                                                autoPlay
-                                                loop
-                                                className="w-full h-full"
-                                            />
+                                            {youtubeEmbedUrl ? (
+                                                <iframe
+                                                    src={youtubeEmbedUrl}
+                                                    title={`${content.title} trailer`}
+                                                    className="w-full h-full"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                    referrerPolicy="strict-origin-when-cross-origin"
+                                                    allowFullScreen
+                                                />
+                                            ) : (
+                                                <video
+                                                    src={content.trailerUrl}
+                                                    controls
+                                                    className="w-full h-full"
+                                                />
+                                            )}
                                         </div>
-                                    </div>
-                                )}
+                                    ) : (
+                                        <div className="rounded-xl bg-muted p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                            <p className="text-muted-foreground">Trailer URL is not available for this title yet.</p>
+                                            <a
+                                                href={trailerSearchUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                                            >
+                                                Search on YouTube
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -228,7 +285,7 @@ const ContentDetailPage = () => {
                                 </h2>
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                     {relatedContent.map((item, index) => (
-                                        <ContentCard key={item.id} content={item} index={index} />
+                                        <ContentCard key={item.id || item._id || index} content={item} index={index} />
                                     ))}
                                 </div>
                             </div>

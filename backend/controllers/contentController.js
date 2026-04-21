@@ -2,6 +2,15 @@ import Content from "../models/Content.js";
 
 const VALID_TYPES = ["movie", "series", "anime"];
 
+const normalizeContent = (doc) => {
+	if (!doc) return null;
+	const item = typeof doc.toObject === "function" ? doc.toObject() : doc;
+	return {
+		...item,
+		id: String(item._id || item.id)
+	};
+};
+
 const parsePositiveInt = (value, fallback) => {
 	const parsed = Number.parseInt(value, 10);
 	return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
@@ -10,9 +19,10 @@ const parsePositiveInt = (value, fallback) => {
 export const getFeaturedContent = async (req, res) => {
 	try {
 		const limit = parsePositiveInt(req.query.limit, 5);
-		const items = await Content.find({})
+		const records = await Content.find({})
 			.sort({ rating: -1, views: -1, createdAt: -1 })
 			.limit(limit);
+		const items = records.map(normalizeContent);
 
 		return res.json({ items });
 	} catch (error) {
@@ -23,9 +33,10 @@ export const getFeaturedContent = async (req, res) => {
 export const getTrendingContent = async (req, res) => {
 	try {
 		const limit = parsePositiveInt(req.query.limit, 12);
-		const items = await Content.find({})
+		const records = await Content.find({})
 			.sort({ views: -1, viewsLast24h: -1, rating: -1 })
 			.limit(limit);
+		const items = records.map(normalizeContent);
 
 		return res.json({ items });
 	} catch (error) {
@@ -40,9 +51,10 @@ export const getTop10ByType = async (req, res) => {
 			return res.status(400).json({ message: "Invalid type. Use movie, series, or anime" });
 		}
 
-		const items = await Content.find({ type })
+		const records = await Content.find({ type })
 			.sort({ rating: -1, views: -1, createdAt: -1 })
 			.limit(10);
+		const items = records.map(normalizeContent);
 
 		return res.json({ items });
 	} catch (error) {
@@ -90,13 +102,14 @@ export const getContentList = async (req, res) => {
 		const parsedLimit = parsePositiveInt(limit, 50);
 		const skip = (parsedPage - 1) * parsedLimit;
 
-		const [items, total] = await Promise.all([
+		const [records, total] = await Promise.all([
 			Content.find(filter)
 				.sort({ createdAt: -1 })
 				.skip(skip)
 				.limit(parsedLimit),
 			Content.countDocuments(filter)
 		]);
+		const items = records.map(normalizeContent);
 
 		return res.json({
 			items,
@@ -145,9 +158,10 @@ export const searchContent = async (req, res) => {
 			}
 		}
 
-		const items = await Content.find(filter)
+		const records = await Content.find(filter)
 			.sort({ views: -1, rating: -1 })
 			.limit(50);
+		const items = records.map(normalizeContent);
 
 		return res.json({ items });
 	} catch (error) {
@@ -158,10 +172,11 @@ export const searchContent = async (req, res) => {
 export const getContentById = async (req, res) => {
 	try {
 		const { id } = req.params;
-		const item = await Content.findById(id);
-		if (!item) {
+		const record = await Content.findById(id);
+		if (!record) {
 			return res.status(404).json({ message: "Content not found" });
 		}
+		const item = normalizeContent(record);
 
 		return res.json({ item });
 	} catch (error) {

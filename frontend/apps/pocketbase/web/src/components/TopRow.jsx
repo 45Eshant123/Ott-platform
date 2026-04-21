@@ -48,16 +48,17 @@ const TopRow = ({ items, title }) => {
             >
                 {items.map((item, index) => {
                     const thumbnailUrl = item.thumbnail || 'https://images.unsplash.com/photo-1574267432644-f610f5b45b2f?w=400';
+                    const contentId = item.id || item._id;
 
                     return (
                         <motion.div
-                            key={item.id}
+                            key={contentId || index}
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.4, delay: index * 0.05 }}
                             className="flex-shrink-0 w-64"
                         >
-                            <Link to={`/content/${item.id}`}>
+                            <Link to={`/content/${contentId}`}>
                                 <div className="group relative overflow-hidden rounded-xl bg-card transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1">
                                     <div className="relative aspect-[16/9] overflow-hidden">
                                         <img

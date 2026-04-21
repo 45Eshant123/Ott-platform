@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 
 const ContentCard = ({ content, index = 0 }) => {
     const thumbnailUrl = content.thumbnail || 'https://images.unsplash.com/photo-1574267432644-f610f5b45b2f?w=400';
+    const contentId = content.id || content._id;
 
     const genreBadges = Array.isArray(content.genre)
         ? content.genre.slice(0, 2)
@@ -16,7 +17,7 @@ const ContentCard = ({ content, index = 0 }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.05 }}
         >
-            <Link to={`/content/${content.id}`}>
+            <Link to={`/content/${contentId}`}>
                 <div className="group relative overflow-hidden rounded-xl bg-card transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1">
                     <div className="aspect-[2/3] overflow-hidden">
                         <img
