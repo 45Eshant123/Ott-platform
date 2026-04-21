@@ -13,6 +13,7 @@ import Footer from '@/components/Footer.jsx';
 import { toast } from 'sonner';
 import { Trash2, Edit, Plus, TrendingUp, Users, Eye } from 'lucide-react';
 import pb from '@/lib/pocketbaseClient';
+import apiServerClient from '@/lib/apiServerClient';
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('content');
@@ -21,6 +22,7 @@ const AdminDashboard = () => {
     const [analytics, setAnalytics] = useState([]);
     const [loading, setLoading] = useState(false);
     const [editingContent, setEditingContent] = useState(null);
+    const [trailerDrafts, setTrailerDrafts] = useState({});
     const [formData, setFormData] = useState({
         title: '',
         type: 'movie',
@@ -42,15 +44,50 @@ const AdminDashboard = () => {
     const fetchContent = async () => {
         setLoading(true);
         try {
-            const records = await pb.collection('content').getList(1, 100, {
-                sort: '-created',
-                $autoCancel: false
-            });
-            setContent(records.items);
+            const response = await apiServerClient.fetch('/api/content?limit=100');
+            if (!response.ok) {
+                throw new Error('Failed to fetch content');
+            }
+
+            const data = await response.json();
+            const items = data.items || [];
+            setContent(items);
+            setTrailerDrafts(
+                items.reduce((acc, item) => {
+                    const itemId = item.id || item._id;
+                    acc[itemId] = item.trailerUrl || '';
+                    return acc;
+                }, {})
+            );
         } catch (error) {
             console.error('Failed to fetch content:', error);
+            toast.error('Failed to fetch content list');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSaveTrailer = async (itemId) => {
+        const trailerUrl = String(trailerDrafts[itemId] || '').trim();
+
+        try {
+            const response = await apiServerClient.fetch(`/api/content/${itemId}/trailer`, {
+                method: 'PATCH',
+                body: JSON.stringify({ trailerUrl })
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result?.message || 'Failed to update trailer URL');
+            }
+
+            toast('Trailer URL updated');
+            setContent((prev) => prev.map((item) => {
+                const id = item.id || item._id;
+                return id === itemId ? { ...item, trailerUrl } : item;
+            }));
+        } catch (error) {
+            toast.error(error.message || 'Failed to update trailer URL');
         }
     };
 
@@ -330,7 +367,7 @@ const AdminDashboard = () => {
                                     <h2 className="font-display font-semibold text-2xl mb-6 text-card-foreground">Content List</h2>
                                     <div className="space-y-4 max-h-[600px] overflow-y-auto">
                                         {content.map((item) => (
-                                            <div key={item.id} className="flex items-center justify-between p-4 bg-background rounded-lg">
+                                            <div key={item.id || item._id} className="p-4 bg-background rounded-lg space-y-3">
                                                 <div>
                                                     <h3 className="font-semibold text-foreground">{item.title}</h3>
                                                     <p className="text-sm text-muted-foreground">
@@ -341,8 +378,26 @@ const AdminDashboard = () => {
                                                     <Button size="icon" variant="secondary" onClick={() => handleEditContent(item)}>
                                                         <Edit className="w-4 h-4" />
                                                     </Button>
-                                                    <Button size="icon" variant="destructive" onClick={() => handleDeleteContent(item.id)}>
+                                                    <Button size="icon" variant="destructive" onClick={() => handleDeleteContent(item.id || item._id)}>
                                                         <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
+                                                    <Input
+                                                        value={trailerDrafts[item.id || item._id] || ''}
+                                                        onChange={(e) => setTrailerDrafts((prev) => ({
+                                                            ...prev,
+                                                            [item.id || item._id]: e.target.value
+                                                        }))}
+                                                        placeholder="https://www.youtube.com/watch?v=..."
+                                                        className="bg-card text-foreground"
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        onClick={() => handleSaveTrailer(item.id || item._id)}
+                                                    >
+                                                        Save Trailer
                                                     </Button>
                                                 </div>
                                             </div>

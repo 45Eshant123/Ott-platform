@@ -183,3 +183,38 @@ export const getContentById = async (req, res) => {
 		return res.status(500).json({ message: "Failed to fetch content details" });
 	}
 };
+
+export const updateContentTrailer = async (req, res) => {
+	try {
+		const { id } = req.params;
+		const trailerUrl = String(req.body?.trailerUrl || "").trim();
+
+		if (trailerUrl) {
+			try {
+				const parsed = new URL(trailerUrl);
+				if (!["http:", "https:"].includes(parsed.protocol)) {
+					return res.status(400).json({ message: "Trailer URL must use http or https" });
+				}
+			} catch {
+				return res.status(400).json({ message: "Invalid trailer URL format" });
+			}
+		}
+
+		const record = await Content.findByIdAndUpdate(
+			id,
+			{ $set: { trailerUrl } },
+			{ new: true }
+		);
+
+		if (!record) {
+			return res.status(404).json({ message: "Content not found" });
+		}
+
+		return res.json({
+			message: "Trailer URL updated successfully",
+			item: normalizeContent(record)
+		});
+	} catch (error) {
+		return res.status(500).json({ message: "Failed to update trailer URL" });
+	}
+};
