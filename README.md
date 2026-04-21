@@ -1,6 +1,6 @@
 # OTT_PLATFORM
 
-This repository contains the frontend for the OTT Platform project, including the PocketBase-powered web app.
+This repository contains the frontend and backend for the OTT Platform project, including the PocketBase-powered web app and TMDB import services.
 
 ## Project Structure
 
@@ -8,6 +8,23 @@ This repository contains the frontend for the OTT Platform project, including th
 OTT_PLATFORM/
 ├── .gitignore
 ├── README.md
+├── backend/
+│   ├── package.json
+│   ├── server.js
+│   ├── config/
+│   ├── controllers/
+│   │   └── tmdbController.js
+│   ├── jobs/
+│   │   └── tmdbImportJob.js
+│   ├── middleware/
+│   ├── models/
+│   │   └── Content.js
+│   ├── routes/
+│   │   └── tmdbRoutes.js
+│   ├── services/
+│   │   └── tmdbService.js
+│   ├── uploads/
+│   └── utils/
 ├── frontend/
 │   ├── package.json
 │   ├── package-lock.json
@@ -131,3 +148,39 @@ OTT_PLATFORM/
 - `src/index.css` is the main stylesheet imported by `main.jsx`.
 - `src/indec.css` is an older stylesheet copy that still exists in the project.
 - The web app uses PocketBase client files in `src/lib/`.
+
+## OTP Email Auth Setup (Nodemailer)
+
+Manual password-based login/signup is still supported.
+OTP-based login and signup confirmation are added as optional flows.
+
+### Backend service
+
+Path: `backend/login part`
+
+1. Copy `.env.example` to `.env`.
+2. Fill SMTP and PocketBase values.
+3. Install dependencies:
+
+```bash
+cd backend/login\ part
+npm install
+```
+
+4. Run the OTP service:
+
+```bash
+npm run dev
+```
+
+The service runs on `http://127.0.0.1:4000` by default.
+
+### Frontend
+
+Set this in your frontend env (Vite):
+
+```bash
+VITE_API_SERVER_URL=http://127.0.0.1:4000
+```
+
+If not set, the frontend now defaults to `http://127.0.0.1:4000` for OTP API calls.

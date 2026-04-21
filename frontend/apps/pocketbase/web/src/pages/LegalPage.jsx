@@ -157,7 +157,7 @@ const LegalPage = () => {
                                         <p>Email: legal@streamvault.com</p>
                                         <p>Response time: 5-7 business days</p>
                                     </div>
-                                </div>
+                                </div>ī
                             </section>
                         </div>
                     </div>

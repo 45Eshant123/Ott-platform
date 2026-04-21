@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import pb from '@/lib/pocketbaseClient';
+import apiServerClient from '@/lib/apiServerClient';
 
 const AuthContext = createContext(null);
 
@@ -31,6 +32,21 @@ export const AuthProvider = ({ children }) => {
         return () => unsubscribe();
     }, []);
 
+    const parseApiError = async (response, fallbackMessage) => {
+        let errorMessage = fallbackMessage;
+
+        try {
+            const body = await response.json();
+            if (body?.message) {
+                errorMessage = body.message;
+            }
+        } catch {
+            // Ignore JSON parsing errors and keep fallback message.
+        }
+
+        throw new Error(errorMessage);
+    };
+
     const login = async (email, password) => {
         const authData = await pb.collection('users').authWithPassword(email, password, { $autoCancel: false });
         setCurrentUser(authData.record);
@@ -48,6 +64,64 @@ export const AuthProvider = ({ children }) => {
         const record = await pb.collection('users').create(data, { $autoCancel: false });
         await login(email, password);
         return record;
+    };
+
+    const sendLoginOtp = async (email, password) => {
+        const response = await apiServerClient.fetch('/auth/login/request-otp', {
+            method: 'POST',
+            body: JSON.stringify({ email, password })
+        });
+
+        if (!response.ok) {
+            await parseApiError(response, 'Unable to send login OTP');
+        }
+
+        return response.json();
+    };
+
+    const verifyLoginOtp = async (email, otp) => {
+        const response = await apiServerClient.fetch('/auth/login/verify-otp', {
+            method: 'POST',
+            body: JSON.stringify({ email, otp })
+        });
+
+        if (!response.ok) {
+            await parseApiError(response, 'Invalid login OTP');
+        }
+
+        const authData = await response.json();
+        pb.authStore.save(authData.token, authData.record);
+        setCurrentUser(authData.record);
+        return authData;
+    };
+
+    const sendSignupOtp = async (name, email, password, passwordConfirm) => {
+        const response = await apiServerClient.fetch('/auth/signup/request-otp', {
+            method: 'POST',
+            body: JSON.stringify({ name, email, password, passwordConfirm })
+        });
+
+        if (!response.ok) {
+            await parseApiError(response, 'Unable to send signup OTP');
+        }
+
+        return response.json();
+    };
+
+    const verifySignupOtp = async (email, otp) => {
+        const response = await apiServerClient.fetch('/auth/signup/verify-otp', {
+            method: 'POST',
+            body: JSON.stringify({ email, otp })
+        });
+
+        if (!response.ok) {
+            await parseApiError(response, 'Invalid signup OTP');
+        }
+
+        const authData = await response.json();
+        pb.authStore.save(authData.token, authData.record);
+        setCurrentUser(authData.record);
+        return authData;
     };
 
     const logout = () => {
@@ -89,6 +163,10 @@ export const AuthProvider = ({ children }) => {
         isAdmin,
         login,
         signup,
+        sendLoginOtp,
+        verifyLoginOtp,
+        sendSignupOtp,
+        verifySignupOtp,
         logout,
         requestPasswordReset,
         confirmPasswordReset,

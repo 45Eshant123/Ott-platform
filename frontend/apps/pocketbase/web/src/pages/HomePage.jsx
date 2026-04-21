@@ -146,18 +146,22 @@ const HomePage = () => {
                     </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                        {/* 🎬 Movies */}
                         <Link to="/categories?type=movie">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
-                                className="relative min-h-[250px] rounded-2xl overflow-hidden group cursor-pointer"
+                                className="relative h-64 rounded-2xl overflow-hidden group cursor-pointer"
                             >
                                 <img
-                                    src="https://picsum.photos/800/400"
+                                    src="https://images.pexels.com/photos/7991373/pexels-photo-7991373.jpeg?auto=compress&w=800"
                                     alt="Movies"
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                 />
+
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                                <div className="absolute bottom-6 left-6">
+
+                                <div className="absolute bottom-6 left-6 z-10">
                                     <Film className="w-8 h-8 text-primary mb-2" />
                                     <h3 className="font-display font-bold text-2xl text-white">Movies</h3>
                                     <p className="text-white/80 text-sm">Explore our collection</p>
@@ -165,18 +169,21 @@ const HomePage = () => {
                             </motion.div>
                         </Link>
 
+                        {/* 📺 Web Series */}
                         <Link to="/categories?type=series">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
                                 className="relative h-64 rounded-2xl overflow-hidden group cursor-pointer"
                             >
                                 <img
-                                    src="https://images.unsplash.com/photo-1569587889770-9134d27b292e?w=800"
-                                    alt="Series"
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                    src="https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&w=800"
+                                    alt="Web Series"
+                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                 />
+
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                                <div className="absolute bottom-6 left-6">
+
+                                <div className="absolute bottom-6 left-6 z-10">
                                     <Tv className="w-8 h-8 text-primary mb-2" />
                                     <h3 className="font-display font-bold text-2xl text-white">Web Series</h3>
                                     <p className="text-white/80 text-sm">Binge-worthy shows</p>
@@ -184,24 +191,28 @@ const HomePage = () => {
                             </motion.div>
                         </Link>
 
+                        {/* 🎌 Anime */}
                         <Link to="/categories?type=anime">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
                                 className="relative h-64 rounded-2xl overflow-hidden group cursor-pointer"
                             >
                                 <img
-                                    src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800"
+                                    src="https://images.pexels.com/photos/7234276/pexels-photo-7234276.jpeg?auto=compress&cs=tinysrgb&w=800"
                                     alt="Anime"
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                 />
+
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                                <div className="absolute bottom-6 left-6">
+
+                                <div className="absolute bottom-6 left-6 z-10">
                                     <Sparkles className="w-8 h-8 text-primary mb-2" />
                                     <h3 className="font-display font-bold text-2xl text-white">Anime</h3>
                                     <p className="text-white/80 text-sm">Japanese animation</p>
                                 </div>
                             </motion.div>
                         </Link>
+
                     </div>
                 </section>
 

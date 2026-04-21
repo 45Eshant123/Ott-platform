@@ -11,14 +11,35 @@ import { Film } from 'lucide-react';
 const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [otp, setOtp] = useState('');
+    const [otpSent, setOtpSent] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, sendLoginOtp, verifyLoginOtp } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
 
+        try {
+            if (!otpSent) {
+                await sendLoginOtp(email, password);
+                setOtpSent(true);
+                toast('OTP sent to your email');
+            } else {
+                await verifyLoginOtp(email, otp);
+                toast('Welcome back');
+                navigate('/');
+            }
+        } catch (error) {
+            toast.error(error.message || 'Unable to complete sign in');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleManualLogin = async () => {
+        setLoading(true);
         try {
             await login(email, password);
             toast('Welcome back');
@@ -76,6 +97,22 @@ const LoginPage = () => {
                                 />
                             </div>
 
+                            {otpSent && (
+                                <div>
+                                    <Label htmlFor="otp" className="text-card-foreground">Email OTP</Label>
+                                    <Input
+                                        id="otp"
+                                        type="text"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        required
+                                        className="mt-2 bg-background text-foreground tracking-[0.4em]"
+                                        placeholder="123456"
+                                        maxLength={6}
+                                    />
+                                </div>
+                            )}
+
                             <div className="flex items-center justify-between">
                                 <Link to="/password-reset" className="text-sm text-primary hover:underline">
                                     Forgot password?
@@ -87,8 +124,35 @@ const LoginPage = () => {
                                 className="w-full"
                                 disabled={loading}
                             >
-                                {loading ? 'Signing in...' : 'Sign In'}
+                                {loading ? 'Processing...' : otpSent ? 'Verify OTP & Sign In' : 'Send OTP'}
                             </Button>
+
+                            {!otpSent && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    disabled={loading}
+                                    onClick={handleManualLogin}
+                                >
+                                    Sign In With Password
+                                </Button>
+                            )}
+
+                            {otpSent && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    disabled={loading}
+                                    onClick={() => {
+                                        setOtpSent(false);
+                                        setOtp('');
+                                    }}
+                                >
+                                    Change email or password
+                                </Button>
+                            )}
                         </form>
 
                         <div className="mt-6 text-center">

@@ -13,13 +13,45 @@ const SignupPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
+    const [otp, setOtp] = useState('');
+    const [otpSent, setOtpSent] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { signup } = useAuth();
+    const { signup, sendSignupOtp, verifySignupOtp } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (!otpSent && password !== passwordConfirm) {
+            toast.error('Passwords do not match');
+            return;
+        }
+
+        if (!otpSent && password.length < 8) {
+            toast.error('Password must be at least 8 characters');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            if (!otpSent) {
+                await sendSignupOtp(name, email, password, passwordConfirm);
+                setOtpSent(true);
+                toast('Confirmation OTP sent to your email');
+            } else {
+                await verifySignupOtp(email, otp);
+                toast('Account created successfully');
+                navigate('/');
+            }
+        } catch (error) {
+            toast.error(error.message || 'Unable to complete signup');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleManualSignup = async () => {
         if (password !== passwordConfirm) {
             toast.error('Passwords do not match');
             return;
@@ -31,7 +63,6 @@ const SignupPage = () => {
         }
 
         setLoading(true);
-
         try {
             await signup(name, email, password, passwordConfirm);
             toast('Account created successfully');
@@ -71,6 +102,7 @@ const SignupPage = () => {
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     required
+                                    disabled={otpSent}
                                     className="mt-2 bg-background text-foreground"
                                     placeholder="Maya Chen"
                                 />
@@ -84,6 +116,7 @@ const SignupPage = () => {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
+                                    disabled={otpSent}
                                     className="mt-2 bg-background text-foreground"
                                     placeholder="you@example.com"
                                 />
@@ -98,6 +131,7 @@ const SignupPage = () => {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     minLength={8}
+                                    disabled={otpSent}
                                     className="mt-2 bg-background text-foreground"
                                     placeholder="••••••••"
                                 />
@@ -112,18 +146,62 @@ const SignupPage = () => {
                                     onChange={(e) => setPasswordConfirm(e.target.value)}
                                     required
                                     minLength={8}
+                                    disabled={otpSent}
                                     className="mt-2 bg-background text-foreground"
                                     placeholder="••••••••"
                                 />
                             </div>
+
+                            {otpSent && (
+                                <div>
+                                    <Label htmlFor="otp" className="text-card-foreground">Confirmation OTP</Label>
+                                    <Input
+                                        id="otp"
+                                        type="text"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        required
+                                        className="mt-2 bg-background text-foreground tracking-[0.4em]"
+                                        placeholder="123456"
+                                        maxLength={6}
+                                    />
+                                </div>
+                            )}
 
                             <Button
                                 type="submit"
                                 className="w-full"
                                 disabled={loading}
                             >
-                                {loading ? 'Creating account...' : 'Sign Up'}
+                                {loading ? 'Processing...' : otpSent ? 'Verify OTP & Create Account' : 'Send Confirmation OTP'}
                             </Button>
+
+                            {!otpSent && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    disabled={loading}
+                                    onClick={handleManualSignup}
+                                >
+                                    Sign Up Without OTP
+                                </Button>
+                            )}
+
+                            {otpSent && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    disabled={loading}
+                                    onClick={() => {
+                                        setOtpSent(false);
+                                        setOtp('');
+                                    }}
+                                >
+                                    Edit account details
+                                </Button>
+                            )}
                         </form>
 
                         <div className="mt-6 text-center">

@@ -1,4 +1,4 @@
-const apiBaseUrl = import.meta.env.VITE_API_SERVER_URL || import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
+const apiBaseUrl = import.meta.env.VITE_API_SERVER_URL || 'http://127.0.0.1:4000';
 
 const normalizePath = (path) => {
     if (!path) return '';
