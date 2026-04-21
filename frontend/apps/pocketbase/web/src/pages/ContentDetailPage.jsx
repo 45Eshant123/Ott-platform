@@ -9,7 +9,7 @@ import ContentCard from '@/components/ContentCard.jsx';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import pb from '@/lib/pocketbaseClient';
+import apiServerClient from '@/lib/apiServerClient';
 
 const ContentDetailPage = () => {
     const { id } = useParams();
@@ -22,16 +22,18 @@ const ContentDetailPage = () => {
     useEffect(() => {
         fetchContent();
         fetchRelatedContent();
-        if (isAuthenticated) {
-            checkWatchlist();
-        }
-    }, [id, isAuthenticated]);
+    }, [id]);
 
     const fetchContent = async () => {
         setLoading(true);
         try {
-            const record = await pb.collection('content').getOne(id, { $autoCancel: false });
-            setContent(record);
+            const response = await apiServerClient.fetch(`/api/content/${id}`);
+            if (!response.ok) {
+                throw new Error('Content not found');
+            }
+
+            const data = await response.json();
+            setContent(data.item);
         } catch (error) {
             console.error('Failed to fetch content:', error);
         } finally {
@@ -41,28 +43,27 @@ const ContentDetailPage = () => {
 
     const fetchRelatedContent = async () => {
         try {
-            const currentContent = await pb.collection('content').getOne(id, { $autoCancel: false });
-            const records = await pb.collection('content').getList(1, 8, {
-                filter: `type = "${currentContent.type}" && id != "${id}"`,
-                sort: '-rating',
-                $autoCancel: false
+            const params = new URLSearchParams({
+                type: content?.type || 'movie',
+                limit: '8'
             });
-            setRelatedContent(records.items);
+
+            const response = await apiServerClient.fetch(`/api/content?${params}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch related content');
+            }
+
+            const data = await response.json();
+            setRelatedContent(
+                (data.items || []).filter((item) => item.id !== id).slice(0, 8)
+            );
         } catch (error) {
             console.error('Failed to fetch related content:', error);
         }
     };
 
     const checkWatchlist = async () => {
-        try {
-            const records = await pb.collection('watchlist').getList(1, 1, {
-                filter: `userId = "${currentUser.id}" && contentId = "${id}"`,
-                $autoCancel: false
-            });
-            setInWatchlist(records.items.length > 0);
-        } catch (error) {
-            console.error('Failed to check watchlist:', error);
-        }
+        // TODO: Implement watchlist check when backend watchlist API is available
     };
 
     const toggleWatchlist = async () => {
@@ -70,29 +71,8 @@ const ContentDetailPage = () => {
             toast.error('Please sign in to add to watchlist');
             return;
         }
-
-        try {
-            if (inWatchlist) {
-                const records = await pb.collection('watchlist').getList(1, 1, {
-                    filter: `userId = "${currentUser.id}" && contentId = "${id}"`,
-                    $autoCancel: false
-                });
-                if (records.items.length > 0) {
-                    await pb.collection('watchlist').delete(records.items[0].id, { $autoCancel: false });
-                    setInWatchlist(false);
-                    toast('Removed from watchlist');
-                }
-            } else {
-                await pb.collection('watchlist').create({
-                    userId: currentUser.id,
-                    contentId: id
-                }, { $autoCancel: false });
-                setInWatchlist(true);
-                toast('Added to watchlist');
-            }
-        } catch (error) {
-            toast.error('Failed to update watchlist');
-        }
+        // TODO: Implement watchlist toggle when backend watchlist API is available
+        toast.error('Watchlist feature coming soon');
     };
 
     if (loading) {
@@ -128,9 +108,7 @@ const ContentDetailPage = () => {
         );
     }
 
-    const thumbnailUrl = content.thumbnail
-        ? pb.files.getUrl(content, content.thumbnail)
-        : 'https://images.unsplash.com/photo-1574267432644-f610f5b45b2f?w=800';
+    const thumbnailUrl = content?.thumbnail || 'https://images.unsplash.com/photo-1574267432644-f610f5b45b2f?w=800';
 
     return (
         <>

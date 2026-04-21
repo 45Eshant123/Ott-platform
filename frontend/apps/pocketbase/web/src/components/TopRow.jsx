@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import pb from '@/lib/pocketbaseClient';
 
 const TopRow = ({ items, title }) => {
     const scrollRef = useRef(null);
@@ -48,9 +47,7 @@ const TopRow = ({ items, title }) => {
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {items.map((item, index) => {
-                    const thumbnailUrl = item.thumbnail
-                        ? pb.files.getUrl(item, item.thumbnail)
-                        : 'https://images.unsplash.com/photo-1574267432644-f610f5b45b2f?w=400';
+                    const thumbnailUrl = item.thumbnail || 'https://images.unsplash.com/photo-1574267432644-f610f5b45b2f?w=400';
 
                     return (
                         <motion.div

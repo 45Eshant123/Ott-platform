@@ -7,7 +7,7 @@ import ContentCard from '@/components/ContentCard.jsx';
 import FilterSidebar from '@/components/FilterSidebar.jsx';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search as SearchIcon } from 'lucide-react';
-import pb from '@/lib/pocketbaseClient';
+import apiServerClient from '@/lib/apiServerClient';
 
 const SearchPage = () => {
     const [query, setQuery] = useState('');
@@ -31,28 +31,21 @@ const SearchPage = () => {
     const searchContent = async () => {
         setLoading(true);
         try {
-            let filterQuery = `title ~ "${query}"`;
-
-            if (filters.genre) {
-                filterQuery += ` && genre ~ "${filters.genre}"`;
-            }
-            if (filters.language) {
-                filterQuery += ` && language = "${filters.language}"`;
-            }
-            if (filters.year) {
-                filterQuery += ` && releaseYear = ${filters.year}`;
-            }
-            if (filters.rating > 0) {
-                filterQuery += ` && rating >= ${filters.rating}`;
-            }
-
-            const records = await pb.collection('content').getList(1, 50, {
-                filter: filterQuery,
-                sort: '-rating',
-                $autoCancel: false
+            const params = new URLSearchParams({
+                q: query,
+                ...(filters.genre && { genre: filters.genre }),
+                ...(filters.language && { language: filters.language }),
+                ...(filters.year && { year: filters.year }),
+                ...(filters.rating > 0 && { rating: filters.rating })
             });
 
-            setResults(records.items);
+            const response = await apiServerClient.fetch(`/api/content/search?${params}`);
+            if (!response.ok) {
+                throw new Error('Search failed');
+            }
+
+            const data = await response.json();
+            setResults(data.items || []);
         } catch (error) {
             console.error('Search failed:', error);
         } finally {

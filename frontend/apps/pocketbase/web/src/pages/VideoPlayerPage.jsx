@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import VideoPlayer from '@/components/VideoPlayer.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import pb from '@/lib/pocketbaseClient';
+import apiServerClient from '@/lib/apiServerClient';
 
 const VideoPlayerPage = () => {
     const { id } = useParams();
@@ -17,17 +17,17 @@ const VideoPlayerPage = () => {
 
     useEffect(() => {
         fetchContent();
-        fetchWatchHistory();
     }, [id]);
 
     const fetchContent = async () => {
         try {
-            const record = await pb.collection('content').getOne(id, { $autoCancel: false });
-            setContent(record);
+            const response = await apiServerClient.fetch(`/api/content/${id}`);
+            if (!response.ok) {
+                throw new Error('Content not found');
+            }
 
-            await pb.collection('content').update(id, {
-                views: (record.views || 0) + 1
-            }, { $autoCancel: false });
+            const data = await response.json();
+            setContent(data.item);
         } catch (error) {
             console.error('Failed to fetch content:', error);
         } finally {
@@ -36,48 +36,11 @@ const VideoPlayerPage = () => {
     };
 
     const fetchWatchHistory = async () => {
-        if (!currentUser) return;
-
-        try {
-            const records = await pb.collection('watchHistory').getList(1, 1, {
-                filter: `userId = "${currentUser.id}" && contentId = "${id}"`,
-                sort: '-updated',
-                $autoCancel: false
-            });
-
-            if (records.items.length > 0) {
-                setWatchHistory(records.items[0]);
-            }
-        } catch (error) {
-            console.error('Failed to fetch watch history:', error);
-        }
+        // TODO: Implement history fetch when backend history API is available
     };
 
     const handleProgress = async (currentTime, duration) => {
-        if (!currentUser) return;
-
-        const completed = currentTime / duration > 0.9;
-
-        try {
-            if (watchHistory) {
-                await pb.collection('watchHistory').update(watchHistory.id, {
-                    position: currentTime,
-                    duration: duration,
-                    completed: completed
-                }, { $autoCancel: false });
-            } else {
-                const newRecord = await pb.collection('watchHistory').create({
-                    userId: currentUser.id,
-                    contentId: id,
-                    position: currentTime,
-                    duration: duration,
-                    completed: completed
-                }, { $autoCancel: false });
-                setWatchHistory(newRecord);
-            }
-        } catch (error) {
-            console.error('Failed to update watch history:', error);
-        }
+        // TODO: Implement progress tracking when backend history API is available
     };
 
     if (loading) {
@@ -96,9 +59,9 @@ const VideoPlayerPage = () => {
         );
     }
 
-    const videoUrl = content.videoStreams?.['720p'] || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-    const audioTracks = content.audioTracks || [{ id: 'original', label: 'Original' }];
-    const subtitleTracks = content.subtitleTracks || [];
+    const videoUrl = content?.videoUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+    const audioTracks = content?.audioTracks || [{ id: 'original', label: 'Original' }];
+    const subtitleTracks = content?.subtitleTracks || [];
     const initialPosition = watchHistory?.position || 0;
 
     return (

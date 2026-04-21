@@ -5,6 +5,7 @@ import cors from 'cors';
 import nodemailer from 'nodemailer';
 import PocketBase from 'pocketbase';
 import tmdbRoutes from "./routes/tmdbRoutes.js";
+import contentRoutes from "./routes/contentRoutes.js";
 import connectDB from "./config/db.js";
 
 dotenv.config();
@@ -39,7 +40,7 @@ const pendingSignupOtps = new Map();
 app.use(cors({ origin: FRONTEND_ORIGIN }));
 app.use(express.json());
 app.use("/api/tmdb", tmdbRoutes);
-
+app.use("/api/content", contentRoutes);
 const hashOtp = (otp) => crypto.createHash('sha256').update(otp).digest('hex');
 
 const createOtpCode = () => `${crypto.randomInt(0, 1000000)}`.padStart(6, '0');

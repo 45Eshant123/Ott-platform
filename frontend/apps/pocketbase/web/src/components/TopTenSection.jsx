@@ -27,9 +27,9 @@ const TopTenSection = () => {
 
         try {
             const [moviesResponse, animeResponse, seriesResponse] = await Promise.all([
-                apiServerClient.fetch('/top10?type=movie'),
-                apiServerClient.fetch('/top10?type=anime'),
-                apiServerClient.fetch('/top10?type=series')
+                apiServerClient.fetch('/api/content/top10?type=movie'),
+                apiServerClient.fetch('/api/content/top10?type=anime'),
+                apiServerClient.fetch('/api/content/top10?type=series')
             ]);
 
             if (!moviesResponse.ok || !animeResponse.ok || !seriesResponse.ok) {
@@ -40,12 +40,12 @@ const TopTenSection = () => {
             const animeData = await animeResponse.json();
             const seriesData = await seriesResponse.json();
 
-            setTopMovies(moviesData.top10 || []);
-            setTopAnime(animeData.top10 || []);
-            setTopSeries(seriesData.top10 || []);
+            setTopMovies(moviesData.items || []);
+            setTopAnime(animeData.items || []);
+            setTopSeries(seriesData.items || []);
         } catch (err) {
             console.error('Failed to fetch top 10 data:', err);
-            setError(err.message);
+            setError(err?.message || 'Failed to fetch top 10 data');
         } finally {
             setLoading(false);
         }

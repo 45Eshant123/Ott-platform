@@ -10,7 +10,7 @@ import ContentCard from '@/components/ContentCard.jsx';
 import TopTenSection from '@/components/TopTenSection.jsx';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import pb from '@/lib/pocketbaseClient';
+import apiServerClient from '@/lib/apiServerClient';
 
 const HomePage = () => {
     const { isAuthenticated } = useAuth();
@@ -25,18 +25,20 @@ const HomePage = () => {
     const fetchContent = async () => {
         setLoading(true);
         try {
-            const featured = await pb.collection('content').getList(1, 5, {
-                sort: '-rating',
-                $autoCancel: false
-            });
+            const [featuredResponse, trendingResponse] = await Promise.all([
+                apiServerClient.fetch('/api/content/featured?limit=5'),
+                apiServerClient.fetch('/api/content/trending?limit=12')
+            ]);
 
-            const trending = await pb.collection('content').getList(1, 12, {
-                sort: '-views',
-                $autoCancel: false
-            });
+            if (!featuredResponse.ok || !trendingResponse.ok) {
+                throw new Error('Failed to fetch content');
+            }
 
-            setFeaturedContent(featured.items);
-            setTrendingContent(trending.items);
+            const featuredData = await featuredResponse.json();
+            const trendingData = await trendingResponse.json();
+
+            setFeaturedContent(featuredData.items || []);
+            setTrendingContent(trendingData.items || []);
         } catch (error) {
             console.error('Failed to fetch content:', error);
         } finally {
@@ -45,9 +47,7 @@ const HomePage = () => {
     };
 
     const heroContent = featuredContent[0];
-    const heroImage = heroContent?.thumbnail
-        ? pb.files.getUrl(heroContent, heroContent.thumbnail)
-        : 'https://images.unsplash.com/photo-1601944179066-29786cb9d32a?w=1920';
+    const heroImage = heroContent?.thumbnail || 'https://images.unsplash.com/photo-1601944179066-29786cb9d32a?w=1920';
 
     return (
         <>

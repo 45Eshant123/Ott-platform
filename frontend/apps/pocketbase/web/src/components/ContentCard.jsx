@@ -2,12 +2,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
-import pb from '@/lib/pocketbaseClient';
 
 const ContentCard = ({ content, index = 0 }) => {
-    const thumbnailUrl = content.thumbnail
-        ? pb.files.getUrl(content, content.thumbnail)
-        : 'https://images.unsplash.com/photo-1574267432644-f610f5b45b2f?w=400';
+    const thumbnailUrl = content.thumbnail || 'https://images.unsplash.com/photo-1574267432644-f610f5b45b2f?w=400';
 
     const genreBadges = Array.isArray(content.genre)
         ? content.genre.slice(0, 2)

@@ -6,7 +6,7 @@ import Footer from '@/components/Footer.jsx';
 import ContentCard from '@/components/ContentCard.jsx';
 import FilterSidebar from '@/components/FilterSidebar.jsx';
 import { Skeleton } from '@/components/ui/skeleton';
-import pb from '@/lib/pocketbaseClient';
+import apiServerClient from '@/lib/apiServerClient';
 
 const CategoriesPage = () => {
     const [activeTab, setActiveTab] = useState('movie');
@@ -26,28 +26,22 @@ const CategoriesPage = () => {
     const fetchContent = async () => {
         setLoading(true);
         try {
-            let filterQuery = `type = "${activeTab}"`;
-
-            if (filters.genre) {
-                filterQuery += ` && genre ~ "${filters.genre}"`;
-            }
-            if (filters.language) {
-                filterQuery += ` && language = "${filters.language}"`;
-            }
-            if (filters.year) {
-                filterQuery += ` && releaseYear = ${filters.year}`;
-            }
-            if (filters.rating > 0) {
-                filterQuery += ` && rating >= ${filters.rating}`;
-            }
-
-            const records = await pb.collection('content').getList(1, 50, {
-                filter: filterQuery,
-                sort: '-created',
-                $autoCancel: false
+            const params = new URLSearchParams({
+                type: activeTab,
+                ...(filters.genre && { genre: filters.genre }),
+                ...(filters.language && { language: filters.language }),
+                ...(filters.year && { year: filters.year }),
+                ...(filters.rating > 0 && { rating: filters.rating }),
+                limit: '50'
             });
 
-            setContent(records.items);
+            const response = await apiServerClient.fetch(`/api/content?${params}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch content');
+            }
+
+            const data = await response.json();
+            setContent(data.items || []);
         } catch (error) {
             console.error('Failed to fetch content:', error);
         } finally {
