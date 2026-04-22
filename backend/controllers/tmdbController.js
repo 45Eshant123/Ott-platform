@@ -6,13 +6,41 @@ import {
 } from "../services/tmdbService.js";
 
 const IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
+const TRAILER_CONCURRENCY = 2;
+
+const mapWithConcurrency = async (items, limit, mapper) => {
+    const results = new Array(items.length);
+    let index = 0;
+
+    const worker = async () => {
+        while (index < items.length) {
+            const current = index;
+            index += 1;
+            results[current] = await mapper(items[current], current);
+        }
+    };
+
+    const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
+    await Promise.all(workers);
+    return results;
+};
 
 export const importMovies = async (req, res) => {
     try {
         const movies = await fetchPopularMovies();
+        const includeTrailers = String(req?.query?.includeTrailers || "false").toLowerCase() === "true";
 
-        const formatted = await Promise.all(
-            movies.map(async (m) => ({
+        const formatted = await mapWithConcurrency(movies, TRAILER_CONCURRENCY, async (m) => {
+            let trailerUrl = "";
+            if (includeTrailers) {
+                try {
+                    trailerUrl = await fetchTrailerUrl("movie", m.id);
+                } catch {
+                    trailerUrl = "";
+                }
+            }
+
+            return {
                 tmdbId: m.id,
                 title: m.title,
                 type: "movie",
@@ -20,10 +48,10 @@ export const importMovies = async (req, res) => {
                 rating: m.vote_average,
                 releaseYear: Number.parseInt(m.release_date?.split("-")[0], 10) || undefined,
                 description: m.overview,
-                trailerUrl: await fetchTrailerUrl("movie", m.id),
+                trailerUrl,
                 source: "tmdb"
-            }))
-        );
+            };
+        });
 
         for (const item of formatted) {
             await Content.updateOne(
@@ -33,18 +61,37 @@ export const importMovies = async (req, res) => {
             );
         }
 
-        res.json({ message: "Movies imported successfully" });
+        res.json({
+            message: "Movies imported successfully",
+            includeTrailers,
+            imported: formatted.length
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        const message =
+            error?.response?.data?.status_message ||
+            error?.message ||
+            "Failed to import movies from TMDB";
+
+        res.status(500).json({ error: message });
     }
 };
 
 export const importSeries = async (req, res) => {
     try {
         const series = await fetchPopularSeries();
+        const includeTrailers = String(req?.query?.includeTrailers || "false").toLowerCase() === "true";
 
-        const formatted = await Promise.all(
-            series.map(async (s) => ({
+        const formatted = await mapWithConcurrency(series, TRAILER_CONCURRENCY, async (s) => {
+            let trailerUrl = "";
+            if (includeTrailers) {
+                try {
+                    trailerUrl = await fetchTrailerUrl("series", s.id);
+                } catch {
+                    trailerUrl = "";
+                }
+            }
+
+            return {
                 tmdbId: s.id,
                 title: s.name,
                 type: "series",
@@ -52,10 +99,10 @@ export const importSeries = async (req, res) => {
                 rating: s.vote_average,
                 releaseYear: Number.parseInt(s.first_air_date?.split("-")[0], 10) || undefined,
                 description: s.overview,
-                trailerUrl: await fetchTrailerUrl("series", s.id),
+                trailerUrl,
                 source: "tmdb"
-            }))
-        );
+            };
+        });
 
         for (const item of formatted) {
             await Content.updateOne(
@@ -65,8 +112,17 @@ export const importSeries = async (req, res) => {
             );
         }
 
-        res.json({ message: "Series imported successfully" });
+        res.json({
+            message: "Series imported successfully",
+            includeTrailers,
+            imported: formatted.length
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        const message =
+            error?.response?.data?.status_message ||
+            error?.message ||
+            "Failed to import series from TMDB";
+
+        res.status(500).json({ error: message });
     }
 };
